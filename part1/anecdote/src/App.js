@@ -42,7 +42,6 @@ const App = () => {
     }
     return handler
   }
-  console.log(Math.max(...vote))
   return (
     <div>
       <h1>{"Anecdote of the day"}</h1>
