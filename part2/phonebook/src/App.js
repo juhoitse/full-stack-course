@@ -20,7 +20,7 @@ const Form = (props) => {
   const nameHandler = props.nameHandler
 
   return (
-    <form onSubmit={addPerson}>confirm
+    <form onSubmit={addPerson}>
       <div>
         name: <input value={newName} onChange={nameHandler} />
       </div>
@@ -100,9 +100,11 @@ const App = () => {
     console.log('effect')
     nameService.getAll().then(response => {
       console.log('promise fulfilled')
-      setPersons(response.data)
-      setLength(response.data[response.data.length-1].id)
-    })
+      if(response) {
+        setPersons(response.data)
+        setLength(response.data[response.data.length-1].id)
+      }
+    }).catch(err => console.log(err.response.data.error))
   }
 
   useEffect(hook, [])
@@ -154,9 +156,10 @@ const App = () => {
           updatePerson(oldPerson, newPerson)
         })
         .catch( error => {//log errors
-              console.log("Error", error.message)
-              setErrorMessage(`Information of ${oldPerson.name} has already been removed from the server`)
-              setTimeout(() => {setMessage(null)}, 5000)
+          console.log("Error", error.response.data.error)
+          setErrorMessage(error.response.data.error)
+          //setErrorMessage(`Information of ${oldPerson.name} has already been removed from the server`)
+          setTimeout(() => {setMessage(null)}, 5000)
             })
       }
     } else {
@@ -173,9 +176,10 @@ const App = () => {
               //add update the latest given ID
               setLength(length+1) })
       .catch( error => {//log errors
-            console.log("Error", error.message)
-            setErrorMessage(`Error ${error.message}`)
-            setTimeout(() => {setMessage(null)}, 5000)
+          console.log("Error", error.response.data.error)
+          setErrorMessage(error.response.data.error)
+          //setErrorMessage(`Information of ${oldPerson.name} has already been removed from the server`)
+          setTimeout(() => {setMessage(null)}, 5000)
           })
     }
   }
