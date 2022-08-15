@@ -2,8 +2,34 @@ const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const Blog = require('../models/blog')
+const User = require('../models/user')
+//const bcrypt = require('bcrypt')
 
 const api = supertest(app)
+
+const users = [
+	{
+		username: 'user1',
+		name: '1user',
+		password: 'user'
+	},
+	{
+		username: 'user2',
+		name: '2user',
+		password: 'user'
+	},
+	{
+		username: 'user3',
+		name: '3user',
+		password: 'user'
+	}
+]
+
+const admin = {
+	username: 'admin',
+	name: 'admin',
+	password: 'admin'
+}
 
 const blogs = [
 	{
@@ -58,18 +84,49 @@ const blogs = [
 
 beforeEach(async () => {
 	await Blog.deleteMany({})
+	await User.deleteMany({})
+	//new User(admin).save()
 	for(const blog of blogs) {
 		let blogObject = new Blog(blog)
 		await blogObject.save()
 	}
 })
 
+describe('When adding a user', () => {
+	test('with username, name and password user is added', async () => {
+		await api.post('/api/users').send(users[0])
+		const usersDB = await api.get('/api/users')
+		expect(await usersDB.body.some( async (e) => {
+			return (e.username === users[0].username)
+		})).toBe(true)
+	})
+
+	test('with an existing username responds with an validation error', async () => {
+		await api.post('/api/users').send(users[1])
+		await api.post('/api/users').send(users[1])
+		const newUsers = await api.get('/api/users')
+		//const usersDB = await api.get('/api/users')
+		//console.log(res)
+		expect(newUsers.body.length).toBe(1)
+	})
+})
+
+describe('When logging in', () => {
+	test('with correct credentials returns a token', async () => {
+		const credentials = {
+			username: 'user3',
+			password: 'user'
+		}
+		const token = await api.post('/api/login').send(credentials)
+
+		expect(!token).toBe(false)
+	})
+})
+
 describe('When making a get request', () => {
 	test('blogs are returned as json', async () => {
-		await api
-			.get('/api/blogs')
-			.expect(200)
-			.expect('Content-Type', /application\/json/)
+		await api.get('/api/blogs').expect('Content-Type', /application\/json/)
+		//expect('Content-Type', /application\/json/)
 	})
 
 	test('correct amount of blogs are fetched', async () => {
@@ -86,16 +143,18 @@ describe('When making a get request', () => {
 
 describe('When making a post request', () => {
 	test('with a new blog it adds it to db', async () => {
+		await api.post('/api/users').send(users[2])
+		const token = (await api.post('/api/login').send(users[2])).body.token
+
 		const blog = {
 			'title': 'testblog',
 			'author': 'me',
 			'url': 'blog.com',
 			'likes': 69
 		}
-		await api.post('/api/blogs').send(blog)
+		await api.post('/api/blogs').set('Authorization', `Bearer ${token}`).send(blog)
 		const result = await api.get('/api/blogs')
-		//console.log(result.body)
-		//console.log(res1)
+
 		expect(result.body.some(e => {
 			return (e.title === blog.title &&
 			e.author === blog.author &&
@@ -111,7 +170,10 @@ describe('When making a post request', () => {
 			'author': 'me',
 			'url': 'blog.com',
 		}
-		await api.post('/api/blogs').send(blog)
+		await api.post('/api/users').send(users[2])
+		const token = (await api.post('/api/login').send(users[2])).body.token
+
+		await api.post('/api/blogs').set('Authorization', `Bearer ${token}`).send(blog)
 		const result = await api.get('/api/blogs')
 		//console.log(result.body)
 		//console.log(res1)
@@ -127,7 +189,9 @@ describe('When making a post request', () => {
 		const blog = {
 			'author': 'me',
 		}
-		const result = await api.post('/api/blogs').send(blog)
+		await api.post('/api/users').send(users[2])
+		const token = (await api.post('/api/login').send(users[2])).body.token
+		const result = await api.post('/api/blogs').set('Authorization', `Bearer ${token}`).send(blog)
 		//console.log(result.body)
 		//console.log(res1)
 		expect(result.status).toBe(400)
@@ -137,22 +201,27 @@ describe('When making a post request', () => {
 
 describe('When making a delete request', () => {
 	test('it deletes the blog', async () => {
+		await api.post('/api/users').send(users[2])
+		const token = (await api.post('/api/login').send(users[2])).body
+		const tempBlog = {
+			title: 'temp',
+			author: 'temp',
+			url: 'temp'
+		}
+		//console.log(token)
+		const blog = (await api.post('/api/blogs').set('Authorization', `Bearer ${token.token}`).send(tempBlog))
 		const preblogs = (await api.get('/api/blogs')).body
-		await api.delete(`/api/blogs/${preblogs[1].id}`)
+		await api.delete(`/api/blogs/${blog.body.id}`).set('Authorization', `Bearer ${token.token}`)
 		const postblogs = (await api.get('/api/blogs')).body
 		expect(postblogs.length === (preblogs.length - 1)).toBe(true)
-		expect(postblogs.some(e => {
-			return (e.title === preblogs[1].title &&
-			e.author === preblogs[1].author &&
-			e.url === preblogs[1].url &&
-			e.likes === preblogs[1].likes
-			)}))
-			.toBe(false)
 	})
 })
 
 describe('When making a put request', () => {
 	test('to en existing blog it updates it', async () => {
+		await api.post('/api/users').send(users[2])
+		const token = (await api.post('/api/login').send(users[2])).body.token
+
 		const dbBlogs = await api.get('/api/blogs')
 		const blog = dbBlogs.body[1]
 		const newBlog = {
@@ -162,7 +231,7 @@ describe('When making a put request', () => {
 			url: 'newurl',
 			likes: 100
 		}
-		await api.put(`/api/blogs/${blog.id}`).send(newBlog)
+		await api.put(`/api/blogs/${blog.id}`).set('Authorization', `Bearer ${token}`).send(newBlog)
 		const result = await api.get('/api/blogs')
 		expect(result.body.find(e => {
 			return (e.title === newBlog.title &&
