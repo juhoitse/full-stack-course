@@ -30,9 +30,4 @@ test('<CreateBlogForm /> updates parent state and calls onSubmit', async () => {
   const sendButton = screen.getByText('create')
 
   await user.click(sendButton)
-
-  /*expect(addMock.mock.calls).toHaveLength(1)
-  expect(addMock.mock.calls[0][0].content).toBe('testing a title...')
-  expect(addMock.mock.calls[0][1].content).toBe('testing an author...')
-  expect(addMock.mock.calls[0][2].content).toBe('testing a url...')*/
 })

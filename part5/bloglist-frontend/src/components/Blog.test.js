@@ -71,7 +71,14 @@ test('clicking like button twice likes twice', async () => {
     }
   }
 
-  const likeHandler = jest.fn()
+  let count = 0
+
+  const likeHandler = () => {
+    const handler = () => {
+      count++
+    }
+    return handler
+  }
 
   const deleteHandler = jest.fn()
 
@@ -84,5 +91,5 @@ test('clicking like button twice likes twice', async () => {
   await user.click(like)
   await user.click(like)
 
-  expect(likeHandler.mock.calls).toHaveLength(2)
+  expect(count).toBe(2)
 })
