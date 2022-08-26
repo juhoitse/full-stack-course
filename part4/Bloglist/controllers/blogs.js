@@ -4,6 +4,7 @@ const Blog = require('../models/blog.js')
 
 blogsRouter.get('/', async (request, response) => {
 	const blogs = await Blog.find({}).populate('user', {username: 1, name: 1, _id: 1})
+	console.log(blogs)
 	await response.status(200).json(blogs)
 })
 
@@ -59,7 +60,11 @@ blogsRouter.put('/:id', async (request, response) => {
 		url: body.url || prevBlog.url,
 		likes: body.likes || prevBlog.likes
 	})
-	const result = await Blog.findOneAndUpdate({ _id: request.params.id }, blog, {runValidators: true})
+
+	const result = await Blog.findOneAndUpdate({ _id: request.params.id}, blog, {runValidators: true})
+	if(!result) {
+		response.status(401).end()
+	}
 	response.status(200).json(result)
 
 })
