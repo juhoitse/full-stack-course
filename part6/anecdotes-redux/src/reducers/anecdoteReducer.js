@@ -1,5 +1,5 @@
-import { createSlice } from '@reduxjs/toolkit'
-import anecdoteService from '../services/anecdotes'
+import { createSlice } from "@reduxjs/toolkit";
+import anecdoteService from "../services/anecdotes";
 
 /*const anecdotesAtStart = [
   'If it hurts, do it more often',
@@ -10,63 +10,65 @@ import anecdoteService from '../services/anecdotes'
   'Debugging is twice as hard as writing the code in the first place. Therefore, if you write the code as cleverly as possible, you are, by definition, not smart enough to debug it.'
 ]*/
 
-const getId = () => (100000 * Math.random()).toFixed(0)
+const getId = () => (100000 * Math.random()).toFixed(0);
 
 const asObject = (anecdote) => {
   return {
     content: anecdote,
     id: getId(),
-    votes: 0
-  }
-}
+    votes: 0,
+  };
+};
 
-const initialState = []//anecdotesAtStart.map(asObject).sort( (a,b) => a.votes < b.votes)
+const initialState = []; //anecdotesAtStart.map(asObject).sort( (a,b) => a.votes < b.votes)lklms
 
 const anecdoteSlice = createSlice({
-  name: 'anecdotes',
+  name: "anecdotes",
   initialState: initialState,
   reducers: {
     appendAnecdote(state, action) {
-      state.push(action.payload)
+      state.push(action.payload);
     },
     vote(state, action) {
-      const id = action.payload
-      const anecdote = state.find(a => a.id === id)
+      const id = action.payload;
+      const anecdote = state.find((a) => a.id === id);
       const newAnecdote = {
         content: anecdote.content,
         id: anecdote.id,
-        votes: anecdote.votes + 1
-      }
-      return state.map(a => a.id !== action.payload ? a : newAnecdote).sort( (a,b) => a.votes < b.votes)
+        votes: anecdote.votes + 1,
+      };
+      return state
+        .map((a) => (a.id !== action.payload ? a : newAnecdote))
+        .sort((a, b) => a.votes < b.votes);
     },
     setAnecdotes(state, action) {
-      return action.payload.sort( (a,b) => a.votes < b.votes)
-    }
-  }
-})
+      return action.payload.sort((a, b) => a.votes < b.votes);
+    },
+  },
+});
 
-export const { vote, setAnecdotes, appendAnecdote } = anecdoteSlice.actions
+export const { vote, setAnecdotes, appendAnecdote } = anecdoteSlice.actions;
 
 export const initiliazeAnecdotes = () => {
-  return async dispatch => {
-    const anecdotes = await anecdoteService.getAll()
+  return async (dispatch) => {
+    const anecdotes = await anecdoteService.getAll();
     //console.log('anecdotes', anecdotes)
-    dispatch(setAnecdotes(anecdotes))
-  }
-}
+    dispatch(setAnecdotes(anecdotes));
+  };
+};
 
 export const voteAnecdote = (id, anecdote) => {
-  return async dispatch => {
-    const voot = await anecdoteService.update(id, anecdote)
-    dispatch(vote(id))
-  }
-}
+  return async (dispatch) => {
+    const voot = await anecdoteService.update(id, anecdote);
+    dispatch(vote(id));
+  };
+};
 
-export const createAnecdote = content => {
-  return async dispatch => {
-    const newAnecdote = await anecdoteService.createNew(content)
-    dispatch(appendAnecdote(newAnecdote))
-  }
-}
+export const createAnecdote = (content) => {
+  return async (dispatch) => {
+    const newAnecdote = await anecdoteService.createNew(content);
+    dispatch(appendAnecdote(newAnecdote));
+  };
+};
 
-export default anecdoteSlice.reducer
+export default anecdoteSlice.reducer;
